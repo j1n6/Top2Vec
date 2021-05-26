@@ -183,6 +183,7 @@ class Top2Vec:
                  keep_documents=True,
                  workers=None,
                  tokenizer=None,
+                 prepared_tokens=None,
                  use_embedding_model_tokenizer=False,
                  umap_args=None,
                  hdbscan_args=None,
@@ -286,14 +287,21 @@ class Top2Vec:
             logger.info('Pre-processing documents for training')
 
             if use_corpus_file:
-                processed = [' '.join(tokenizer(doc)) for doc in documents]
+                if prepared_tokens != None:
+                    processed = [' '.join(tks) for tks in prepared_tokens]
+                else:
+                    processed = [' '.join(tokenizer(doc)) for doc in documents]
+                    
                 lines = "\n".join(processed)
                 temp = tempfile.NamedTemporaryFile(mode='w+t')
                 temp.write(lines)
                 doc2vec_args["corpus_file"] = temp.name
 
             else:
-                train_corpus = [TaggedDocument(tokenizer(doc), [i]) for i, doc in enumerate(documents)]
+                if prepared_tokens != None:
+                    train_corpus = [TaggedDocument(tks, [i]) for i, tks in enumerate(prepared_tokens)]
+                else:
+                    train_corpus = [TaggedDocument(tokenizer(doc), [i]) for i, doc in enumerate(documents)]
                 doc2vec_args["documents"] = train_corpus
 
             logger.info('Creating joint document/word embedding')
@@ -313,7 +321,11 @@ class Top2Vec:
             logger.info('Pre-processing documents for training')
 
             # preprocess documents
-            tokenized_corpus = [tokenizer(doc) for doc in documents]
+            
+            if prepared_tokens != None:
+                tokenized_corpus = [tks for tks in prepared_tokens]
+            else:
+                tokenized_corpus = [tokenizer(doc) for doc in documents]
 
             def return_doc(doc):
                 return doc
